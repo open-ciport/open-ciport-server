@@ -1,0 +1,38 @@
+{
+  "name": "open-ciport-server",
+  "version": "0.0.0",
+  "description": "API for open ciport project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node -r esm server.js",
+    "startdbg": "node -r esm --inspect-brk server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Vaclav Klecanda <vencax77@gmail.com> (http://vxk.cz)",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "connect-redis": "^4.0.3",
+    "cookie-parser": "^1.4.3",
+    "cors": "^2.8.4",
+    "dotenv": "^6.0.0",
+    "esm": "^3.2.25",
+    "express": "^4.16.2",
+    "express-session": "^1.17.0",
+    "knex": "^0.20.6",
+    "knex-filter-loopback": "^0.3.0",
+    "morgan": "^1.9.0",
+    "nodeify": "^1.0.1",
+    "passport": "^0.4.0",
+    "passport-jwt": "^4",
+    "pg": "^7.17.1",
+    "redis": "^2.8.0",
+    "underscore": "^1.9.1"
+  },
+  "engines": {
+    "node": ">=8"
+  },
+  "devDependencies": {
+    "sqlite3": "^4.1.1"
+  }
+}
