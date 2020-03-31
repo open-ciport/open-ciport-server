@@ -27,7 +27,7 @@ export function initApp (app) {
 }
 
 export function getUid (req) {
-  return req.user.id
+  return req.user.PersonIdentifier
 }
 
 export function required (req, res, next) {
