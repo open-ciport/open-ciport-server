@@ -5,13 +5,16 @@ import morgan from 'morgan'
 import bodyParser from 'body-parser'
 
 import InitGrantApp from './api/grants'
+import InitFormApp from './api/forms'
 import {generalErrorHlr, authErrorHlr, notFoundErrorHlr} from './error_handlers'
 import { initApp, getUid, required } from './auth'
+import uredniBackend from './ouris_backends/debug'
 const initDB = require('./db')
 const port = process.env.PORT
 
 function initExpressApp (knex) {
   const app = express()
+  const JSONBodyParser = bodyParser.json()
   app.use(morgan('dev'))
 
   const corsMiddleware = cors({
@@ -25,7 +28,9 @@ function initExpressApp (knex) {
   initApp(app)
   const auth = { getUid, required }
 
-  InitGrantApp(app, express, knex, auth, bodyParser.json())
+  uredniBackend.init(app)
+  InitFormApp(app, express, knex, auth, JSONBodyParser, uredniBackend.send)
+  InitGrantApp(app, express, knex, auth, JSONBodyParser)
 
   // ERROR HANDLING ------------------------------------------------------------
   app.use(notFoundErrorHlr, authErrorHlr, generalErrorHlr)
