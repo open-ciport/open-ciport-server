@@ -1,34 +1,28 @@
-const knex = require('knex')
-const path = require('path')
-const DB_URL = process.env.DATABASE_URL
+import knex from 'knex'
+import path from 'path'
+import fs from 'fs'
+import assert from 'assert'
+assert.ok(process.env.DATABASE_URL, 'env.DATABASE_URL not defined!')
 
-const opts = {
-  migrations: {
-    directory: path.join(__dirname, 'api', 'grants', 'migrations')
-  },
-  debug: process.env.NODE_ENV === 'debug'
-}
-if (DB_URL.indexOf('postgres') >= 0) {
-  Object.assign(opts, { client: 'pg', connection: DB_URL })
-} else {
-  Object.assign(opts, {
-    client: 'sqlite3',
-    connection: {
-      filename: DB_URL === undefined ? ':memory:' : DB_URL
+export default async (apps) => {
+  //
+  const opts = {
+    client: 'pg',
+    connection: process.env.DATABASE_URL,
+    migrations: {
+      directory: Object.keys(apps).reduce((acc, key) => {
+        const modulepath = path.dirname(require.resolve(apps[key]))
+        const migrationFolder = path.join(modulepath, 'migrations')
+        if (fs.existsSync(migrationFolder)) acc.push(migrationFolder)
+        return acc
+      }, [])
     },
-    useNullAsDefault: true,
-    pool: { min: 0, max: 7 }
-  })
-}
+    debug: process.env.NODE_ENV === 'debug'
+  }
 
-const db = knex(opts)
+  const db = knex(opts)
 
-module.exports = () => {
-  return db.migrate.latest()
-    .then(() => {
-      return process.env.RUN_SEEDS ? db.seed.run(opts) : null
-    })
-    .then(() => {
-      return db
-    })
+  await db.migrate.latest()
+
+  return db
 }

@@ -1,18 +1,19 @@
-require('dotenv').config()
 import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
 import bodyParser from 'body-parser'
-
-import InitGrantApp from './api/grants'
-import InitFormApp from './api/forms'
-import {generalErrorHlr, authErrorHlr, notFoundErrorHlr} from './error_handlers'
+import initErrorHandlers from './error_handlers'
 import { initApp, getUid, required } from './auth'
 import uredniBackend from './ouris_backends/debug'
-const initDB = require('./db')
-const port = process.env.PORT
+import initDB from './db'
 
-function initExpressApp (knex) {
+const apps = {
+  grants: './api/grants',
+  forms: './api/forms'
+}
+
+async function init (host, port) {
+  const db = await initDB(apps)
   const app = express()
   const JSONBodyParser = bodyParser.json()
   app.use(morgan('dev'))
@@ -26,30 +27,34 @@ function initExpressApp (knex) {
   app.options(corsMiddleware)
 
   initApp(app)
-  const auth = { getUid, required }
+
+  const appContext = {
+    express,
+    db,
+    auth: { getUid, required },
+    JSONBodyParser,
+    integrator: uredniBackend.send
+  }
 
   uredniBackend.init(app)
-  InitFormApp(app, express, knex, auth, JSONBodyParser, uredniBackend.send)
-  InitGrantApp(app, express, knex, auth, JSONBodyParser)
 
-  // ERROR HANDLING ------------------------------------------------------------
-  app.use(notFoundErrorHlr, authErrorHlr, generalErrorHlr)
-  // ---------------------------------------------------------------------------
-  return app
+  for (var appname in apps) { // init all apps
+    const appInit = require(apps[appname]).default
+    const subApp = appInit(appContext)
+    app.use(`/${appname}`, subApp)
+  }
+
+  initErrorHandlers(app) // ERROR HANDLING
+  app.listen(port, host, (err) => {
+    if (err) throw err
+    console.log(`frodo do magic on ${host}:${port}`)
+  })
 }
 
-// ENTRY point
-initDB()
-  .then(knex => {
-    const app = initExpressApp(knex)
-    const host = process.env.HOST || '127.0.0.1'
-    app.listen(port, host, (err) => {
-      if (err) {
-        throw err
-      }
-      console.log(`frodo do magic on ${host}:${port}`)
-    })
-  })
-  .catch(err => {
-    console.error(err)
-  })
+try {
+  const host = process.env.HOST || '127.0.0.1'
+  const port = process.env.PORT
+  init(host, port)
+} catch (err) {
+  console.error(err)
+}
