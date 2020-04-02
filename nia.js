@@ -1,7 +1,10 @@
 import fs from 'fs'
 import bodyParser from 'body-parser'
+import assert from 'assert'
 import NIA from 'node-nia-connector'
-require('dotenv').config()
+
+assert.ok(fs.existsSync(process.env.KEY_FILE), 'env.KEY_FILE not exist!')
+assert.ok(fs.existsSync(process.env.CERT_FILE), 'env.CERT_FILE not exist!')
 
 const NIAConnector = new NIA({
   audience: process.env.AUDIENCE,
@@ -14,18 +17,23 @@ export default function (app, required) {
   app.use(bodyParser.urlencoded({ extended: true }))
 
   app.get('/login', function (req, res, next) {
-    const attrs = [
-      NIA.PROFILEATTRS.PERSON_IDENTIFIER,
-      NIA.PROFILEATTRS.GIVEN_NAME,
-      NIA.PROFILEATTRS.FAMILY_NAME,
-      NIA.PROFILEATTRS.CURRENT_ADDRESS,
-      NIA.PROFILEATTRS.DATE_OF_BIRTH,
-      NIA.PROFILEATTRS.EMAIL,
-      NIA.PROFILEATTRS.CZMORIS_PHONE_NUMBER,
-      NIA.PROFILEATTRS.CZMORIS_ID_TYPE,
-      NIA.PROFILEATTRS.CZMORIS_ID_NUMBER
-    ]
-    NIAConnector.createAuthRequestUrl(attrs).then(loginUrl => {
+    const opts = {
+      attrs: [
+        { name: NIA.PROFILEATTRS.PERSON_IDENTIFIER, required: true },
+        { name: NIA.PROFILEATTRS.GIVEN_NAME, required: true },
+        { name: NIA.PROFILEATTRS.FAMILY_NAME, required: false },
+        { name: NIA.PROFILEATTRS.CURRENT_ADDRESS, required: true },
+        { name: NIA.PROFILEATTRS.CZMORIS_TR_ADRESA_ID, required: true },
+        { name: NIA.PROFILEATTRS.DATE_OF_BIRTH, required: true },
+        { name: NIA.PROFILEATTRS.EMAIL, required: false },
+        { name: NIA.PROFILEATTRS.CZMORIS_PHONE_NUMBER, required: true },
+        { name: NIA.PROFILEATTRS.CZMORIS_ID_TYPE, required: true },
+        { name: NIA.PROFILEATTRS.CZMORIS_ID_NUMBER, required: true }
+      ],
+      level: NIA.LOA.SUBSTANTIAL
+    }
+
+    NIAConnector.createAuthRequestUrl(opts).then(loginUrl => {
       res.redirect(loginUrl)
     }).catch(next)
   })
